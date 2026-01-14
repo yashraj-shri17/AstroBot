@@ -1,4 +1,4 @@
-from main_App import app
+from app import app
 from waitress import serve
 import os
 import logging
