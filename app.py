@@ -9,7 +9,7 @@ import speech_recognition as sr
 import tempfile
 import subprocess
 import fitz  # PyMuPDF for PDFs
-import docx
+from docx import Document
 import pandas as pd
 from urllib.parse import urljoin, urlparse
 from collections import deque

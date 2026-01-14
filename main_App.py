@@ -2,7 +2,14 @@ from flask import Flask, render_template, request, jsonify, session, send_file
 from flask_cors import CORS
 import os
 import json
+import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 from model import get_response as get_isro_response
 from weather_advisory import save_weather_context, geocode_city
 from weather_llm import get_weather_response
@@ -12,10 +19,27 @@ import tempfile
 import datetime
 from models import db, ChatSession, ChatMessage
 
+# Configure logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/astrobot.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+
 app = Flask(__name__)
-app.secret_key = 'astro_bot_secret_key_123'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat_history.db'
+
+# Configuration
+app.secret_key = os.getenv('SECRET_KEY', 'dev_default_key')
+db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'chat_history.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{db_path}')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Logger setup
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('AstroBot startup')
 
 CORS(app)
 db.init_app(app)
@@ -23,6 +47,17 @@ db.init_app(app)
 # Create tables
 with app.app_context():
     db.create_all()
+
+# Error Handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({'error': 'Resource not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    app.logger.error(f"Server Error: {error}")
+    return jsonify({'error': 'Internal server error'}), 500
 
 # Initialize session data
 @app.before_request
@@ -66,8 +101,8 @@ def format_response_for_html(text):
     
     # Convert markdown-style formatting to HTML
     text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
-    text = re.sub(r'^# (.*?)$', r'<h4 style="margin: 15px 0 8px 0; color: #cfe3ff;">\1</h4>', text, flags=re.MULTILINE)
-    text = re.sub(r'^## (.*?)$', r'<h5 style="margin: 12px 0 6px 0; color: #cfe3ff;">\1</h5>', text, flags=re.MULTILINE)
+    text = re.sub(r'^# (.*?)$', r'<h4 style="margin: 15px 0 8px 0; color: #00F0FF; text-transform: uppercase; letter-spacing: 0.05em; font-family: \'Orbitron\', sans-serif;">\1</h4>', text, flags=re.MULTILINE)
+    text = re.sub(r'^## (.*?)$', r'<h5 style="margin: 12px 0 6px 0; color: #00F0FF; font-family: \'Orbitron\', sans-serif;">\1</h5>', text, flags=re.MULTILINE)
     
     # Lists: * item to <li>item</li>
     lines = text.split('\n')
@@ -79,7 +114,7 @@ def format_response_for_html(text):
             if not in_list:
                 formatted_lines.append('<ul style="margin: 8px 0; padding-left: 20px;">')
                 in_list = True
-            formatted_lines.append(f'<li style="margin: 4px 0;">{line[2:].strip()}</li>')
+            formatted_lines.append(f'<li style="margin: 4px 0; color: #E0E6ED;">{line[2:].strip()}</li>')
         else:
             if in_list:
                 formatted_lines.append('</ul>')
@@ -487,4 +522,6 @@ def download_pdf(filename):
         return jsonify({'error': f'PDF generation failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    debug_mode = os.environ.get("FLASK_ENV", "development") == "development"
+    app.run(debug=debug_mode, port=port)

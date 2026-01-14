@@ -8,7 +8,9 @@ from langchain.chains import LLMChain
 INPUT_FILE = Path("data/weather_context.txt")
 
 # Set your Groq API key
-os.environ["GROQ_API_KEY"] = "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"
+from dotenv import load_dotenv
+load_dotenv()
+# API Key is loaded from environment variables
 
 def load_weather_file(path):
     """Load weather context file"""
