@@ -11,7 +11,7 @@ from PyPDF2 import PdfReader
 
 # Load environment variables
 load_dotenv()
-groq_api_key = os.getenv("GROQ_API_KEY")
+groq_api_key = os.getenv("GROQ_API_KEY") or "gsk_dummy_key_for_startup_prevent_crash"
 
 # Step 1: Extract text from PDFs in output/media
 pdf_text = ""

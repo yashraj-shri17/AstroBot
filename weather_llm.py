@@ -41,7 +41,8 @@ Provide a helpful and accurate answer:
         template=template
     )
     
-    llm = ChatGroq(temperature=0, model_name="llama-3.1-8b-instant")
+    api_key = os.getenv("GROQ_API_KEY") or "gsk_dummy_key_for_startup_prevent_crash"
+    llm = ChatGroq(temperature=0, model_name="llama-3.1-8b-instant", groq_api_key=api_key)
     chain = LLMChain(llm=llm, prompt=prompt)
     
     return chain.run({"context": weather_data, "question": question})
