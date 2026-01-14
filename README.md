@@ -1,3 +1,11 @@
+---
+title: AstroBot
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
 # AstroBot - AI-Powered Space & Weather Assistant
 
 A comprehensive AI chatbot web application that provides real-time information about satellites, weather data, and space research using MOSDAC (ISRO) data sources.
