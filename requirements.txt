@@ -20,3 +20,4 @@ waitress
 gunicorn
 sentence-transformers
 faiss-cpu
+speechrecognition
