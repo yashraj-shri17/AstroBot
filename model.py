@@ -17,6 +17,10 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 pdf_text = ""
 pdf_folder = "output/media"
 
+# Ensure directories exist
+if not os.path.exists(pdf_folder):
+    os.makedirs(pdf_folder, exist_ok=True)
+
 for file in os.listdir(pdf_folder):
     if file.endswith(".pdf"):
         try:
@@ -35,7 +39,7 @@ if os.path.exists(json_path):
             json_data = json.load(f)
             json_text = json.dumps(json_data, indent=2)
         except:
-            json_text = f.read()
+            pass # json_text remains empty if load fails
 
 all_text = pdf_text + "\n" + json_text
 
@@ -45,7 +49,13 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=50,
     length_function=len,
 )
-documents = [Document(page_content=chunk) for chunk in text_splitter.split_text(all_text)]
+
+split_docs = text_splitter.split_text(all_text)
+if not split_docs:
+    # Fallback to avoid FAISS error on empty documents
+    split_docs = ["Welcome to AstroBot! I am ready to help you with ISRO and MOSDAC information once data is loaded."]
+
+documents = [Document(page_content=chunk) for chunk in split_docs]
 
 # Step 4: Create embeddings and vector store
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
