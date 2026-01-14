@@ -5,6 +5,7 @@ flask-sqlalchemy
 requests
 geopy
 langchain
+langchain-text-splitters
 langchain_groq
 langchain_huggingface
 langchain_community
